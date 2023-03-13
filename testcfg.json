@@ -8,7 +8,7 @@
     },
     "block": [
         {
-            "path": "/data/rootfs.cpio",
+            "path": "/data/rootfs.ext4",
             "root": true
         }
     ],
