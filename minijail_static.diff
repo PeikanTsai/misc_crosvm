@@ -1,0 +1,73 @@
+diff --git a/Makefile b/Makefile
+index 4759736..ae11b76 100644
+--- a/Makefile
++++ b/Makefile
+@@ -11,7 +11,7 @@ PRELOADPATH = "$(LIBDIR)/$(PRELOADNAME)"
+ CPPFLAGS += -DPRELOADPATH='$(PRELOADPATH)'
+ 
+ # We don't build static libs by default.
+-BUILD_STATIC_LIBS ?= no
++BUILD_STATIC_LIBS ?= yes
+ 
+ # Defines the pivot root path used by the minimalistic-mountns profile.
+ DEFAULT_PIVOT_ROOT ?= /var/empty
+diff --git a/libminijail.c b/libminijail.c
+index 38a5148..5418269 100644
+--- a/libminijail.c
++++ b/libminijail.c
+@@ -71,6 +71,14 @@
+ #define MS_USER_SETTABLE_MASK                                                  \
+ 	(MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_NOATIME | MS_NODIRATIME |       \
+ 	 MS_RELATIME | MS_RDONLY)
++/*
++ * Required for Android host glibc which is permanently stuck on 2.17. Causes
++ * no harm for newer glibc versions.
++ */
++#ifndef MS_NOSYMFOLLOW
++/* Added locally in kernels 4.x+. */
++#define MS_NOSYMFOLLOW 256
++#endif
+ 
+ struct minijail_rlimit {
+ 	int type;
+diff --git a/rust/minijail-sys/build.rs b/rust/minijail-sys/build.rs
+index 29ef8e4..e16ffc9 100644
+--- a/rust/minijail-sys/build.rs
++++ b/rust/minijail-sys/build.rs
+@@ -41,17 +41,19 @@ fn get_cross_compile_prefix() -> String {
+ 
+ fn set_up_libminijail() -> io::Result<PathBuf> {
+     // Minijail requires libcap at runtime.
+-    pkg_config::Config::new().probe("libcap").unwrap();
++    //pkg_config::Config::new().probe("libcap").unwrap();
++    println!("cargo:rustc-link-search=/home/mark1990301/buildroot/output/build/libcap-2.65/libcap");
++    println!("cargo:rustc-link-lib=static=cap");
+ 
+     // Prefer a system-provided Minijail library.
+-    if let Ok(info) = pkg_config::Config::new().probe("libminijail") {
+-        for path in info.include_paths {
+-            let header_path = path.join(HEADER_FILENAME);
+-            if header_path.exists() {
+-                return Ok(header_path);
+-            }
+-        }
+-    }
++   // if let Ok(info) = pkg_config::Config::new().probe("libminijail") {
++    //    for path in info.include_paths {
++     //       let header_path = path.join(HEADER_FILENAME);
++      //      if header_path.exists() {
++       //         return Ok(header_path);
++      //      }
++      //  }
++  //  }
+ 
+     let current_dir = env::var("CARGO_MANIFEST_DIR").unwrap() + "/../..";
+     let out_dir = env::var("OUT_DIR").unwrap();
+@@ -73,6 +75,7 @@ fn set_up_libminijail() -> io::Result<PathBuf> {
+     println!("cargo:rustc-link-lib=static=minijail.pic");
+ 
+     let header_dir = Path::new("../../");
++//    let header_dir = Path::new("../../../../install");
+     let header_path = header_dir.join(HEADER_FILENAME);
+     Ok(header_path)
+ }
