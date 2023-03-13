@@ -1,0 +1,28 @@
+{
+    "kernel": "/data/Image",
+    "cpus": {
+        "num-cores": 2
+    },
+    "mem": {
+        "size": 1024
+    },
+    "block": [
+        {
+            "path": "/data/rootfs.cpio",
+            "root": true
+        }
+    ],
+    "serial": [
+        {
+            "type": "stdout",
+            "hardware": "virtio-console",
+            "console": true,
+            "stdin": true
+        }
+    ],
+    "net": [
+        {
+            "tap-name": "crosvm_tap"
+        }
+    ]
+}
